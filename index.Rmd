@@ -1,0 +1,61 @@
+# Course project for "Practical Machine Learning"" from Coursera
+
+Based on:
+
+Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H. Qualitative Activity Recognition of Weight Lifting Exercises. Proceedings of 4th International Conference in Cooperation with  SIGCHI (Augmented Human '13) . Stuttgart, Germany: ACM SIGCHI, 2013.
+
+Link to paper:
+
+http://groupware.les.inf.puc-rio.br/public/papers/2013.Velloso.QAR-WLE.pdf
+
+# Model selection
+
+I chose random forest at first as it's usually a good starting point when the underlying model is unknown. The performance was good enough to not need to look for another model.
+
+```{r}
+library(caret)
+library(randomForest)
+set.seed(513)
+```
+
+# Data preparation
+
+When manually looking at the data I noticed that some rows (<5%) had extra data columns summarizing the data. I chose to exclude those rows without a big loss in accuracy - they had the label new_window=='yes'.
+
+I also took out the first seven columns which had data such as timestamp, participant name, etc., clearly not needed for the model.
+
+```{r}
+training = read.csv('pml-training.csv')
+testing = read.csv('pml-testing.csv')
+training = subset(training,training$new_window=='no')
+testing = subset(testing,testing$new_window=='no')
+training = training[,8:160]
+testing = testing[,8:160]
+```
+
+# Feature selection
+
+I removed the columns with near zero variance. This left me with 53 features variables vs the original 160
+
+```{r}
+nzv=nearZeroVar(training)
+training = training[,-nzv]
+testing = testing[,-nzv]
+```
+
+# Cross validation
+
+Cross validation is done internally in random forests during training. The OOB estimate of error rate is the unbiased estimate of expected out-of-sample error rate. In my case the estimated out-of-sample error rate was 0.31% as can be seen in the model below.
+
+```{r}
+modFit = randomForest(classe ~., data = training)
+print(modFit)
+```
+
+# Test set
+
+(100% accuracy)
+
+```{r}
+pred = predict(modFit, testing)
+```
